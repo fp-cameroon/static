@@ -73,7 +73,7 @@ Version bump depends on changed directory:
 | `css/_`      | patch (0.0.X) |
 | `js/_`       | minor (0.X.0) |
 
-Examples:
+Examples: 
 
 ```
 v1.2.3 + css change → v1.2.4
