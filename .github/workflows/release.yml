@@ -1,0 +1,163 @@
+name: Static Content Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  release-static:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get last tag
+        id: lasttag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Determine version bump
+        id: bump
+        run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+
+          echo "$CHANGED"
+
+          LEVEL="patch"
+
+          echo "$CHANGED" | grep '^js/_' && LEVEL="minor" || true
+          echo "$CHANGED" | grep '^bin/_' && LEVEL="major" || true
+
+          echo "level=$LEVEL" >> $GITHUB_OUTPUT
+
+      - name: Compute next version
+        id: semver
+        run: |
+          # read MAJOR from VERSION file
+          source VERSION
+          echo "Using MAJOR=$MAJOR"
+
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v$MAJOR.0.0")
+          LAST_TAG=${LAST_TAG#v}
+
+          IFS='.' read -r LAST_MAJOR LAST_MINOR LAST_PATCH <<< "$LAST_TAG"
+
+          # detect changes
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+
+          LEVEL="patch"
+
+          echo "$CHANGED" | grep '^js/_' && LEVEL="minor" || true
+          echo "$CHANGED" | grep '^bin/_' && LEVEL="minor" || true
+
+          case "$LEVEL" in
+            minor)
+              ((LAST_MINOR++))
+              LAST_PATCH=0
+              ;;
+            patch)
+              ((LAST_PATCH++))
+              ;;
+          esac
+
+          NEW_TAG="v$MAJOR.$LAST_MINOR.$LAST_PATCH"
+
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_TAG"
+
+      - name: Validate changed files (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+
+          INVALID=$(echo "$CHANGED" | grep -Ev '^(js/_|css/_|bin/_)' || true)
+
+          if [[ -n "$INVALID" ]]; then
+            echo "Invalid changes:"
+            echo "$INVALID"
+            exit 1
+          fi
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git tag ${{ steps.semver.outputs.tag }}
+          git push origin ${{ steps.semver.outputs.tag }}
+
+      - name: Copy versioned files
+        run: |
+          TAG=${{ steps.semver.outputs.tag }}
+
+          mkdir -p js/$TAG css/$TAG
+
+          cp -r js/_/* js/$TAG/ || true
+          cp -r css/_/* css/$TAG/ || true
+
+      - name: Commit versioned files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add js/ css/
+
+          if ! git diff --staged --quiet; then
+            git commit -m "Release ${{ steps.semver.outputs.tag }}"
+            git push
+          fi
+
+      # Publish "latest" when pushing to main
+      - name: Publish latest to Cloudflare CDN
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: |
+            wrangler r2 object put static/_/js/ --recursive js/_
+            wrangler r2 object put static/_/css/ --recursive css/_
+            wrangler r2 object put static/_/bin --recursive bin/_
+
+      # Publish versioned build otherwise (PR)
+      - name: Publish versioned to Cloudflare CDN
+        if: github.event_name != 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: |
+            wrangler r2 object put static/${{ steps.semver.outputs.tag }}/js/ --recursive js/${{ steps.semver.outputs.tag }}
+            wrangler r2 object put static/${{ steps.semver.outputs.tag }}/css/ --recursive css/${{ steps.semver.outputs.tag }}
+            wrangler r2 object put static/_/bin --recursive bin/_
+
+      - name: Send email notification (PR only)
+        if: github.event_name == 'pull_request'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Static content ${{ steps.semver.outputs.tag }} released"
+          to: admin@fp-cameroon.com, ux@fp-cameroon.com
+          from: Static CI <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            🚀 Static content released
+            Version: ${{ steps.semver.outputs.tag }}
+
+            CDN:
+            https://cdn.fp-cameroon.com/${{ steps.semver.outputs.tag }}/
+
+            Repo: ${{ github.repository }}
