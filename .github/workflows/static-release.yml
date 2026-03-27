@@ -105,7 +105,7 @@ jobs:
           r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
           r2-bucket: static
           source-dir: bin/_
-          destination-dir: static/bin/_
+          destination-dir: static/_/bin
 
       # ======================================================
       # Publish VERSIONED (PR)
@@ -142,4 +142,4 @@ jobs:
           r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
           r2-bucket: static
           source-dir: bin/_
-          destination-dir: static/bin
+          destination-dir: static/_/bin
