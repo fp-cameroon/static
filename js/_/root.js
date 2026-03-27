@@ -10,7 +10,8 @@
  * Modify only files inside the `js/_` directory.
  *
  * CDN:
- * https://cdn.fp-cameroon.com/static/
+ * https://cdn.fp-cameroon.com/static/_/js/
+ * https://cdn.fp-cameroon.com/static/vX.X.X/js/
  *
  * Repository:
  * https://github.com/fp-cameroon/static
