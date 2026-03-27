@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -27,7 +27,7 @@ jobs:
 
       - name: Compute version
         id: semver
-        if: github.event_name != 'push'
+        if: steps.changes.outputs.css == 'true' or  steps.changes.outputs.js == 'true'
         env:
           JS_CHANGED: ${{ steps.changes.outputs.js }}
           CSS_CHANGED: ${{ steps.changes.outputs.css }}
@@ -36,7 +36,7 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Copy versioned content
-        if: github.event_name == 'push'
+        if: steps.changes.outputs.css == 'true' or  steps.changes.outputs.js == 'true'
         env:
           TAG: ${{ steps.semver.outputs.tag }}
           JS_CHANGED: ${{ steps.changes.outputs.js }}
@@ -44,14 +44,22 @@ jobs:
         run: |
           make stage-version
 
+      - name: Bump version and push tag
+        if: (steps.changes.outputs.css == 'true' ||  steps.changes.outputs.js == 'true')
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: ${{ steps.semver.outputs.tag }}
+
       - name: Commit JS & CSS
-        if: github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && (steps.changes.outputs.css == 'true' ||  steps.changes.outputs.js == 'true')
         uses: test-room-7/action-update-file@v1
         with:
             file-path: |
               js/${{ steps.semver.outputs.tag }}/**
               css/${{ steps.semver.outputs.tag }}/**
-            commit-msg: "release ${{ steps.semver.outputs.tag }}"
+            commit-msg: "auto-release ${{ steps.semver.outputs.tag }}"
             github-token: ${{ secrets.GH_TOKEN }}
             allow-removing: true
 
@@ -97,7 +105,7 @@ jobs:
       # ======================================================
 
       - name: Upload versioned JS
-        if: github.event_name != 'push' && steps.changes.outputs.js == 'true'
+        if: github.ref == 'refs/heads/main' && steps.changes.outputs.js == 'true'
         uses: ryand56/r2-upload-action@v1
         with:
           r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -108,7 +116,7 @@ jobs:
           destination-dir: static/${{ steps.semver.outputs.tag }}/js
 
       - name: Upload versioned CSS
-        if: github.event_name != 'push' && steps.changes.outputs.css == 'true'
+        if: github.ref == 'refs/heads/main' && steps.changes.outputs.css == 'true'
         uses: ryand56/r2-upload-action@v1
         with:
           r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -119,7 +127,7 @@ jobs:
           destination-dir: static/${{ steps.semver.outputs.tag }}/css
 
       - name: Upload BIN (always latest)
-        if: steps.changes.outputs.bin == 'true'
+        if: github.ref == 'refs/heads/main' && steps.changes.outputs.bin == 'true'
         uses: ryand56/r2-upload-action@v1
         with:
           r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
