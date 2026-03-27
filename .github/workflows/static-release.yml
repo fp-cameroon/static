@@ -48,10 +48,12 @@ jobs:
         uses: test-room-7/action-update-file@v1
         with:
             file-path: |
-              js/${{ steps.semver.outputs.tag }}/
-              css/${{ steps.semver.outputs.tag }}/
+              js/${{ steps.semver.outputs.tag }}/**
+              css/${{ steps.semver.outputs.tag }}/**
             commit-msg: "release ${{ steps.semver.outputs.tag }}"
             github-token: ${{ secrets.GH_TOKEN }}
+            allow-removing: true
+
       # ======================================================
       # Publish LATEST (push main)
       # ======================================================
