@@ -1,6 +1,14 @@
 name: Static Content Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: release version
+        options:
+          - github
+          - cloudflare
+
   push:
     branches: [ main ]
   pull_request:
@@ -67,7 +75,7 @@ jobs:
       # ======================================================
 
       - name: Upload latest JS
-        if: github.event_name == 'push' && steps.changes.outputs.js == 'true'
+        if: steps.changes.outputs.js == 'true' || inputs.release == 'cloudflare'
         uses: ryand56/r2-upload-action@v1
         with:
           r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -78,7 +86,7 @@ jobs:
           destination-dir: static/_/js
 
       - name: Upload latest CSS
-        if: github.event_name == 'push' && steps.changes.outputs.css == 'true'
+        if: steps.changes.outputs.css == 'true' || inputs.release == 'cloudflare'
         uses: ryand56/r2-upload-action@v1
         with:
           r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -89,7 +97,7 @@ jobs:
           destination-dir: static/_/css
 
       - name: Upload latest BIN
-        if: github.event_name == 'push' && steps.changes.outputs.bin == 'true'
+        if: steps.changes.outputs.bin == 'true' || inputs.release == 'cloudflare'
         uses: ryand56/r2-upload-action@v1
         with:
           r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
