@@ -27,7 +27,6 @@ jobs:
 
       - name: Compute version
         id: semver
-        if: steps.changes.outputs.css == 'true' ||  steps.changes.outputs.js == 'true'
         env:
           JS_CHANGED: ${{ steps.changes.outputs.js }}
           CSS_CHANGED: ${{ steps.changes.outputs.css }}
