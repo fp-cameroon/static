@@ -27,7 +27,7 @@ jobs:
 
       - name: Compute version
         id: semver
-        if: steps.changes.outputs.css == 'true' or  steps.changes.outputs.js == 'true'
+        if: steps.changes.outputs.css == 'true' ||  steps.changes.outputs.js == 'true'
         env:
           JS_CHANGED: ${{ steps.changes.outputs.js }}
           CSS_CHANGED: ${{ steps.changes.outputs.css }}
@@ -36,7 +36,7 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Copy versioned content
-        if: steps.changes.outputs.css == 'true' or  steps.changes.outputs.js == 'true'
+        if: steps.changes.outputs.css == 'true' ||  steps.changes.outputs.js == 'true'
         env:
           TAG: ${{ steps.semver.outputs.tag }}
           JS_CHANGED: ${{ steps.changes.outputs.js }}
