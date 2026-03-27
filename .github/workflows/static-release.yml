@@ -43,8 +43,9 @@ jobs:
           CSS_CHANGED: ${{ steps.changes.outputs.css }}
         run: |
           make stage-version
+
       - name: Commit JS & CSS
-        if: github.event_name != 'push'
+        if: github.event_name == 'push'
         uses: test-room-7/action-update-file@v1
         with:
             file-path: |
