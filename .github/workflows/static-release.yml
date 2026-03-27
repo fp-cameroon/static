@@ -1,0 +1,183 @@
+name: Static Content Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  release-static:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -------------------------------
+      # Detect changes
+      # -------------------------------
+      - name: Detect changes
+        id: changes
+        run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+
+          echo "$CHANGED"
+
+          JS=false
+          CSS=false
+          BIN=false
+
+          echo "$CHANGED" | grep '^js/_' && JS=true || true
+          echo "$CHANGED" | grep '^css/_' && CSS=true || true
+          echo "$CHANGED" | grep '^bin/_' && BIN=true || true
+
+          echo "js=$JS" >> $GITHUB_OUTPUT
+          echo "css=$CSS" >> $GITHUB_OUTPUT
+          echo "bin=$BIN" >> $GITHUB_OUTPUT
+
+      # -------------------------------
+      # Compute semantic version
+      # -------------------------------
+      - name: Compute version
+        id: semver
+        if: github.event_name != 'push'
+        run: |
+          source VERSION
+
+          LAST=$(git describe --tags --abbrev=0 2>/dev/null || echo "v$MAJOR.0.0")
+          LAST=${LAST#v}
+
+          IFS='.' read -r _ MINOR PATCH <<< "$LAST"
+
+          if [[ "${{ steps.changes.outputs.js }}" == "true" ]]; then
+            ((MINOR++))
+            PATCH=0
+          elif [[ "${{ steps.changes.outputs.css }}" == "true" ]]; then
+            ((PATCH++))
+          fi
+
+          TAG="v$MAJOR.$MINOR.$PATCH"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      # -------------------------------
+      # Create tag
+      # -------------------------------
+      - name: Create tag
+        if: github.event_name != 'push'
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git tag ${{ steps.semver.outputs.tag }}
+          git push origin ${{ steps.semver.outputs.tag }}
+
+      # -------------------------------
+      # Copy versioned folders
+      # -------------------------------
+      - name: Copy versioned content
+        if: github.event_name != 'push'
+        run: |
+          TAG=${{ steps.semver.outputs.tag }}
+
+          if [[ "${{ steps.changes.outputs.js }}" == "true" ]]; then
+            mkdir -p js/$TAG
+            cp -r js/_/* js/$TAG/
+          fi
+
+          if [[ "${{ steps.changes.outputs.css }}" == "true" ]]; then
+            mkdir -p css/$TAG
+            cp -r css/_/* css/$TAG/
+          fi
+
+      - name: Commit versioned folders
+        if: github.event_name != 'push'
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+
+          git add js css || true
+
+          if ! git diff --staged --quiet; then
+            git commit -m "release ${{ steps.semver.outputs.tag }}"
+            git push
+          fi
+
+      # ======================================================
+      # Publish LATEST (push main)
+      # ======================================================
+
+      - name: Upload latest JS
+        if: github.event_name == 'push' && steps.changes.outputs.js == 'true'
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: js/_
+          destination-dir: static/latest/js
+
+      - name: Upload latest CSS
+        if: github.event_name == 'push' && steps.changes.outputs.css == 'true'
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: css/_
+          destination-dir: static/latest/css
+
+      - name: Upload latest BIN
+        if: github.event_name == 'push' && steps.changes.outputs.bin == 'true'
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: bin/_
+          destination-dir: static/bin
+
+      # ======================================================
+      # Publish VERSIONED (PR)
+      # ======================================================
+
+      - name: Upload versioned JS
+        if: github.event_name != 'push' && steps.changes.outputs.js == 'true'
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: js/${{ steps.semver.outputs.tag }}
+          destination-dir: static/${{ steps.semver.outputs.tag }}/js
+
+      - name: Upload versioned CSS
+        if: github.event_name != 'push' && steps.changes.outputs.css == 'true'
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: css/${{ steps.semver.outputs.tag }}
+          destination-dir: static/${{ steps.semver.outputs.tag }}/css
+
+      - name: Upload BIN (always latest)
+        if: steps.changes.outputs.bin == 'true'
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: bin/_
+          destination-dir: static/bin
