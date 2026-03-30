@@ -14,6 +14,7 @@ on:
     paths:
       - js/_/**
       - .github/worflows/release-js.yml
+      - VERSION
 
 jobs:
   release:
