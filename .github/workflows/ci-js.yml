@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - js/_/**
-      - .github/worflows/ci-js.yml
+      - .github/workflows/ci-js.yml
 
 jobs:
   update-static:

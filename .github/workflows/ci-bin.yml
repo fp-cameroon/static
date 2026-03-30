@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - bin/_/**
-      - .github/worflows/ci-bin.yml
+      - .github/workflows/ci-bin.yml
 
 jobs:
   updata-static:

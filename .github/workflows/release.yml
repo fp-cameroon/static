@@ -5,7 +5,7 @@ on:
     inputs:
       environment:
         description: environment of release
-        default: staging
+        default: production
         options:
           - staging
           - production
