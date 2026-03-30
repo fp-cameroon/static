@@ -1,23 +1,14 @@
-name: Static Content Release [BIN]
+name: Static Content Update [JS]
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: environment of release
-        default: staging
-        options:
-          - staging
-          - production
   push:
     branches: [ main ]
     paths:
-      - bin/_/**
-      - .github/worflows/bin.yml
-      - VERSION
+      - js/_/**
+      - .github/worflows/release-js.yml
 
 jobs:
-  release:
+  update-static:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,5 +23,5 @@ jobs:
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
           r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
           r2-bucket: static
-          source-dir: bin/_
-          destination-dir: static/_/bin
+          source-dir: js/_
+          destination-dir: static/_/js

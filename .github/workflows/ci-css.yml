@@ -1,0 +1,27 @@
+name: Static Content Update [CSS]
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - css/_/**
+      - .github/worflows/css.yml
+
+jobs:
+  update-static:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Upload latest code
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: css/_
+          destination-dir: static/_/css
