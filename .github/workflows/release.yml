@@ -40,8 +40,8 @@ jobs:
         uses: test-room-7/action-update-file@v1
         with:
             file-path: |
-              js/${{ steps.semver.outputs.tag }}/**
-              css/${{ steps.semver.outputs.tag }}/**
+              js/${{ steps.tag_version.outputs.new_tag }}/**
+              css/${{ steps.tag_version.outputs.new_tag }}/**
             commit-msg: "auto-release ${{ steps.semver.outputs.tag }}"
             github-token: ${{ secrets.GH_TOKEN }}
             allow-removing: true
@@ -54,8 +54,8 @@ jobs:
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
           r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
           r2-bucket: static
-          source-dir: js/${{ steps.semver.outputs.tag }}
-          destination-dir: static/${{ steps.semver.outputs.tag }}/js
+          source-dir: js/${{ steps.tag_version.outputs.new_tag }}
+          destination-dir: static/${{ steps.tag_version.outputs.new_tag }}/js
 
       - name: Upload latest release [CSS]
         if: inputs.environment == 'production'
@@ -65,5 +65,5 @@ jobs:
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
           r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
           r2-bucket: static
-          source-dir: css/${{ steps.semver.outputs.tag }}
-          destination-dir: static/${{ steps.semver.outputs.tag }}/css
+          source-dir: css/${{ steps.tag_version.outputs.new_tag }}
+          destination-dir: static/${{ steps.tag_version.outputs.new_tag }}/css
