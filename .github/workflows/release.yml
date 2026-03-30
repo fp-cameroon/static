@@ -1,4 +1,4 @@
-name: Static Content Release [JS]
+name: Static Content Release
 
 on:
   workflow_dispatch:

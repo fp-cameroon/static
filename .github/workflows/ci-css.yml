@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - css/_/**
-      - .github/worflows/css.yml
+      - .github/worflows/ci-css.yml
 
 jobs:
   update-static:
