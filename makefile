@@ -23,8 +23,8 @@ version:
 .PHONY: stage-version
 stage-version:
 	$(info staging version..)
-	@mkdir -p js/$(TAG);
-	@cp -r js/_/* js/$(TAG)/;
-	@mkdir -p css/$(TAG);
-	@cp -r css/_/* css/$(TAG)/;
+	@mkdir -p js/v$(TAG);
+	@cp -r js/_/* js/v$(TAG)/;
+	@mkdir -p css/v$(TAG);
+	@cp -r css/_/* css/v$(TAG)/;
 
