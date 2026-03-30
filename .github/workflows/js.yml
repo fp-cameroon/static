@@ -1,0 +1,76 @@
+name: Static Content Release [JS]
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: environment of release
+        default: staging
+        options:
+          - staging
+          - production
+  push:
+    branches: [ main ]
+    paths:
+      - js/_/**
+      - .github/worflows/release-js.yml
+      - VERSION
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Compute version
+        id: semver
+        run: |
+          TAG=$(make version)
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create local release
+        if: inputs.environment == 'production'
+        run: |
+          make stage-version
+
+      - name: Push tag
+        if: inputs.environment == 'production'
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          custom_tag: ${{ steps.semver.outputs.tag }}
+
+      - name: Commit release
+        if: inputs.environment == 'production'
+        uses: test-room-7/action-update-file@v1
+        with:
+            file-path: |
+              js/${{ steps.semver.outputs.tag }}/**
+            commit-msg: "auto-release ${{ steps.semver.outputs.tag }}"
+            github-token: ${{ secrets.GH_TOKEN }}
+            allow-removing: true
+
+      - name: Upload latest code
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: js/_
+          destination-dir: static/_/js
+
+      - name: Upload latest release
+        if: inputs.environment == 'production'
+        uses: ryand56/r2-upload-action@v1
+        with:
+          r2-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
+          r2-bucket: static
+          source-dir: js/${{ steps.semver.outputs.tag }}
+          destination-dir: static/${{ steps.semver.outputs.tag }}/js

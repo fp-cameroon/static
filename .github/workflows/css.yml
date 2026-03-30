@@ -1,10 +1,10 @@
-name: Static Content Release [JS]
+name: Static Content Release [CSS]
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: release environment
+        description: environment of release
         default: staging
         options:
           - staging
@@ -12,8 +12,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - js/_/**
-      - .github/worflows/release-js.yml
+      - css/_/**
+      - .github/worflows/css.yml
       - VERSION
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
         uses: test-room-7/action-update-file@v1
         with:
             file-path: |
-              js/${{ steps.semver.outputs.tag }}/**
+              css/${{ steps.semver.outputs.tag }}/**
             commit-msg: "auto-release ${{ steps.semver.outputs.tag }}"
             github-token: ${{ secrets.GH_TOKEN }}
             allow-removing: true
@@ -61,8 +61,8 @@ jobs:
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
           r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
           r2-bucket: static
-          source-dir: js/_
-          destination-dir: static/_/js
+          source-dir: css/_
+          destination-dir: static/_/css
 
       - name: Upload latest release
         if: inputs.environment == 'production'
@@ -72,5 +72,5 @@ jobs:
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY }}
           r2-secret-access-key: ${{ secrets.R2_SECRET_KEY }}
           r2-bucket: static
-          source-dir: js/${{ steps.semver.outputs.tag }}
-          destination-dir: static/${{ steps.semver.outputs.tag }}/js
+          source-dir: css/${{ steps.semver.outputs.tag }}
+          destination-dir: static/${{ steps.semver.outputs.tag }}/css
