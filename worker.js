@@ -10,7 +10,9 @@ export default {
     }
 
     // Fetch from R2
-    const object = await env.CDN_BUCKET.get(url.pathname.slice(1));
+    const key = decodeURIComponent(url.pathname.slice(1));
+
+    const object = await env.CDN_BUCKET.get(key);
 
     if (!object) {
       return new Response("Not Found", { status: 404 });
