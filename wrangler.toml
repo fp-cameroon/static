@@ -1,0 +1,8 @@
+name = "cdn-fp-cameroon"
+main = "worker.js"
+compatibility_date = "2026-04-24"
+
+[[r2_buckets]]
+binding = "CDN_BUCKET"
+bucket_name = "static"
+preview_bucket_name = "static"
