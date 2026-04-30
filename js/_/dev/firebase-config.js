@@ -14,7 +14,7 @@ const firebaseConfig = {
   appId: "1:255966225885:web:7a6a85409e64f8cdb60234"
 };
 
-const auth_backend = "http://localhost:8080";
+const auth_backend = "https://auth-dev.fp-cameroon.com";
 const frontend = "http://localhost:8001"
 
 // Initialize Firebase

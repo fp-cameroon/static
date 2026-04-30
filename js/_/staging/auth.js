@@ -47,10 +47,10 @@ async function consumeAccessToken(secureEndpoint) {
   return false;
 }
 
-async function fetchAccessToken(secureEndpoint="index.html") {
+async function fetchAccessToken(secureEndpoint="index.html", server) {
   console.log("Calling auth backend...:");
   await discardCookie("_fp_cameroon_redirect");
-  setCookie("_fp_cameroon_redirect", `${frontend}/${secureEndpoint}`)
+  setCookie("_fp_cameroon_redirect", `${server}/${secureEndpoint}`)
   setCookie("_fp_cameroon_role", `admin`)
   window.location.replace( `${auth_backend}`)
 }
@@ -59,10 +59,9 @@ async function discardCookie(name) {
   document.cookie = `${name}=; path=/; max-age=0`;
 }
 
-async function login(secureEndpoint="index.html") {
+async function login(secureEndpoint="index.html", server=frontend) {
   try {
-    await consumeAccessToken(secureEndpoint) ||  (await fetchAccessToken(secureEndpoint)
-        && await consumeAccessToken(secureEndpoint))
+    await consumeAccessToken(secureEndpoint) ||  (await fetchAccessToken(secureEndpoint, server))
   } catch (e) {
     console.log(e);
   }
