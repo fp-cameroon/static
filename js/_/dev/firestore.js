@@ -43,7 +43,7 @@ async function getItem(id, database="catalog") {
   try {
     return await getDoc(doc(db, database, id));
   } catch (error) {
-    console.error("Delete error:", error);
+    console.error("Get error:", error);
     alert("[firestore] Unable to get item.");
   }
 }
@@ -52,7 +52,7 @@ async function putItem(id, data, database="catalog") {
   try {
     await setDoc(doc(db, database, id), data);
   } catch (error) {
-    console.error("Delete error:", error);
+    console.error("Put error:", error);
     alert("[firestore] Unable to put item.");
   }
 }
@@ -62,7 +62,7 @@ async function updateItem(id, data, database="catalog") {
     await updateDoc(doc(db, database, id), data);
     alert("[firestore]  Item deleted successfully.");
   } catch (error) {
-    console.error("Delete error:", error);
+    console.error("Update error:", error);
     alert("[firestore]  Unable to delete item.");
   }
 }
