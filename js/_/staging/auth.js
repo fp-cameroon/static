@@ -1,8 +1,8 @@
 import {auth, auth_backend, frontend} from "./firebase-config.js";
-import {signInWithCustomToken, onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {signInWithCustomToken, onAuthStateChanged, signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-export function getCookie(name) {
+function getCookie(name) {
   const cookies = document.cookie.split(";");
   for (let cookie of cookies) {
     cookie = cookie.trim();
@@ -13,7 +13,7 @@ export function getCookie(name) {
   return null;
 }
 
-export function setCookie(name, value, maxAge=60) {
+function setCookie(name, value, maxAge=60) {
   const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
   let cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
   cookie += `; path=/`;
@@ -25,14 +25,14 @@ export function setCookie(name, value, maxAge=60) {
   document.cookie = cookie;
 }
 
-export async function fetchRole() {
+async function fetchRole() {
   const token = await auth.currentUser.getIdTokenResult();
   const role = token.claims.role;
   console.log("[auth] role =>", role)
   return role
 }
 
-export async function consumeAccessToken(secureEndpoint) {
+async function consumeAccessToken(secureEndpoint) {
   const accessToken = getCookie("_fp_cameroon_accessToken");
   console.log("[auth] accessToken =>", !!accessToken)
   if (accessToken) {
@@ -40,14 +40,14 @@ export async function consumeAccessToken(secureEndpoint) {
     console.log("[auth] users =>", !!user, !!auth.currentUser)
     const role = await fetchRole(user);
     if (role === "admin") {
-      console.log("[auth] redirecting => dashboard");
+      console.log("[auth] redirecting =>", secureEndpoint);
       return true;
     }
   }
   return false;
 }
 
-async function fetchAccessToken(secureEndpoint="dashboard.html") {
+async function fetchAccessToken(secureEndpoint="index.html") {
   console.log("Calling auth backend...:");
   await discardCookie("_fp_cameroon_redirect");
   setCookie("_fp_cameroon_redirect", `${frontend}/${secureEndpoint}`)
@@ -59,22 +59,24 @@ async function discardCookie(name) {
   document.cookie = `${name}=; path=/; max-age=0`;
 }
 
-export async function login(secureEndpoint="dashboard.html") {
+async function login(secureEndpoint="index.html") {
   try {
-    await consumeAccessToken(secureEndpoint) ||  (await fetchAccessToken(secureEndpoint))
+    await consumeAccessToken(secureEndpoint) ||  (await fetchAccessToken(secureEndpoint)
+        && await consumeAccessToken(secureEndpoint))
   } catch (e) {
     console.log(e);
   }
 }
 
-export async function logout(){
+async function logout(){
   await discardCookie("_fp_cameroon_accessToken");
   await discardCookie("_fp_cameroon_uid");
   await discardCookie("_fp_cameroon_role");
   await discardCookie("_fp_cameroon_redirect");
+  await signOut(auth);
   window.location.href="/"
 }
 
-export {auth, onAuthStateChanged};
+export {auth, onAuthStateChanged, logout, login, consumeAccessToken, fetchRole, setCookie, getCookie};
 
 
